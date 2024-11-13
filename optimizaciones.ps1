@@ -28,7 +28,7 @@ function Get-RegistryValue {
             return "No configurado"
         }
     } else {
-        return "Error: sección no definida"
+        return "Error: seccion no definida"
     }
 }
 
@@ -45,6 +45,10 @@ function Set-RegistryValue {
 }
 
 function Save-CurrentConfigurations {
+    if (Test-Path $backupFilePath) {
+        return  
+    }
+
     $configurations = @(
         "PowerSettings_Attributes=$((Get-RegistryValue -Section 'PowerSettings' -Name 'Attributes'))",
         "TcpIpParameters_TcpAckFrequency=$((Get-RegistryValue -Section 'TcpIpParameters' -Name 'TcpAckFrequency'))",
@@ -56,9 +60,10 @@ function Save-CurrentConfigurations {
         "NetworkAdapter_DisableTaskOffload=$((Get-RegistryValue -Section 'NetworkAdapter' -Name 'DisableTaskOffload'))",
         "NetworkAdapter_EnableRSS=$((Get-RegistryValue -Section 'NetworkAdapter' -Name 'EnableRSS'))"
     )
-
+    
     $configurations | Out-File -FilePath $backupFilePath
 }
+
 
 function Load-ConfigurationsFromBackup {
     if (Test-Path $backupFilePath) {
@@ -68,7 +73,6 @@ function Load-ConfigurationsFromBackup {
             if ($parts.Length -eq 2) {
                 $name = $parts[0]
                 $value = $parts[1]
-                
                 $section, $key = $name.Split("_")
                 Set-RegistryValue -Section $section -Name $key -Value $value
             }
@@ -80,7 +84,6 @@ function Load-ConfigurationsFromBackup {
 
 function Apply-Optimizations {
     Save-CurrentConfigurations
-
     Set-RegistryValue -Section "PowerSettings" -Name "Attributes" -Value 0
     Set-RegistryValue -Section "TcpIpParameters" -Name "TcpAckFrequency" -Value 1
     Set-RegistryValue -Section "MemoryManagement" -Name "DisablePagingExecutive" -Value 1
@@ -90,150 +93,145 @@ function Apply-Optimizations {
     Set-RegistryValue -Section "MouseClass" -Name "MouseDataQueueSize" -Value 50
     Set-RegistryValue -Section "NetworkAdapter" -Name "DisableTaskOffload" -Value 1
     Set-RegistryValue -Section "NetworkAdapter" -Name "EnableRSS" -Value 1
-
-    [System.Windows.Forms.MessageBox]::Show("Las configuraciones se han optimizado con éxito para un mejor rendimiento.", "Optimización Aplicada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    [System.Windows.Forms.MessageBox]::Show("Las configuraciones se han optimizado con exito para un mejor rendimiento.", "Optimizacion Aplicada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     UpdateStatus
 }
 
 function Revert-Optimizations {
     Load-ConfigurationsFromBackup
-
-    [System.Windows.Forms.MessageBox]::Show("Las optimizaciones han sido revertidas a sus valores predeterminados.", "Reversión Completada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    [System.Windows.Forms.MessageBox]::Show("Las optimizaciones han sido revertidas a sus valores predeterminados.", "Reversion Completada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     UpdateStatus
 }
 
 function UpdateStatus {
     $textboxPowerSettings.Text = "Ajustes de energia: " + (Get-RegistryValue -Section "PowerSettings" -Name "Attributes")
-    $textboxTcpIpParameters.Text = "Optimización de red (TCP): " + (Get-RegistryValue -Section "TcpIpParameters" -Name "TcpAckFrequency")
+    $textboxTcpIpParameters.Text = "Optimizacion de red (TCP): " + (Get-RegistryValue -Section "TcpIpParameters" -Name "TcpAckFrequency")
     $textboxMemoryManagement.Text = "Gestion de memoria: " + (Get-RegistryValue -Section "MemoryManagement" -Name "DisablePagingExecutive")
     $textboxPriorityControl.Text = "Prioridad del sistema: " + (Get-RegistryValue -Section "PriorityControl" -Name "Win32PrioritySeparation")
-    $textboxMouseSettings.Text = "Velocidad del ratón: " + (Get-RegistryValue -Section "MouseSettings" -Name "MouseSpeed")
+    $textboxMouseSettings.Text = "Velocidad del raton: " + (Get-RegistryValue -Section "MouseSettings" -Name "MouseSpeed")
     $textboxGameConfigStore.Text = "Ajustes de juego (DVR): " + (Get-RegistryValue -Section "GameConfigStore" -Name "GameDVR_FSEBehaviorMode")
-    $textboxMouseDataQueueSize.Text = "Tamaño de cola del ratón: " + (Get-RegistryValue -Section "MouseClass" -Name "MouseDataQueueSize")
-    $textboxNetworkOffload.Text = "Desactivación de Offload: " + (Get-RegistryValue -Section "NetworkAdapter" -Name "DisableTaskOffload")
+    $textboxMouseDataQueueSize.Text = "Tamano de cola del raton: " + (Get-RegistryValue -Section "MouseClass" -Name "MouseDataQueueSize")
+    $textboxNetworkOffload.Text = "Desactivacion de Offload: " + (Get-RegistryValue -Section "NetworkAdapter" -Name "DisableTaskOffload")
     $textboxNetworkRSS.Text = "RSS Habilitado: " + (Get-RegistryValue -Section "NetworkAdapter" -Name "EnableRSS")
 }
 
-$form = New-Object System.Windows.Forms.Form
-$form.Text = "Optimización del Sistema"
-$form.Size = New-Object System.Drawing.Size(600, 550)
-$form.StartPosition = "CenterScreen"
-$form.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+function Download-Files {
+    $menuContextualPath = [System.IO.Path]::Combine($env:ProgramFiles, "TheKrowBlooder", "menucontextual")
+    $tempPath = [System.IO.Path]::Combine($env:TEMP, "menucontextual.reg")
 
-$textboxPowerSettings = New-Object System.Windows.Forms.TextBox
-$textboxPowerSettings.Location = New-Object System.Drawing.Point(20, 20)
-$textboxPowerSettings.Size = New-Object System.Drawing.Size(540, 20)
-$textboxPowerSettings.ReadOnly = $true
-$textboxTcpIpParameters = New-Object System.Windows.Forms.TextBox
-$textboxTcpIpParameters.Location = New-Object System.Drawing.Point(20, 50)
-$textboxTcpIpParameters.Size = New-Object System.Drawing.Size(540, 20)
-$textboxTcpIpParameters.ReadOnly = $true
-$textboxMemoryManagement = New-Object System.Windows.Forms.TextBox
-$textboxMemoryManagement.Location = New-Object System.Drawing.Point(20, 80)
-$textboxMemoryManagement.Size = New-Object System.Drawing.Size(540, 20)
-$textboxMemoryManagement.ReadOnly = $true
-$textboxPriorityControl = New-Object System.Windows.Forms.TextBox
-$textboxPriorityControl.Location = New-Object System.Drawing.Point(20, 110)
-$textboxPriorityControl.Size = New-Object System.Drawing.Size(540, 20)
-$textboxPriorityControl.ReadOnly = $true
-$textboxMouseSettings = New-Object System.Windows.Forms.TextBox
-$textboxMouseSettings.Location = New-Object System.Drawing.Point(20, 140)
-$textboxMouseSettings.Size = New-Object System.Drawing.Size(540, 20)
-$textboxMouseSettings.ReadOnly = $true
-$textboxGameConfigStore = New-Object System.Windows.Forms.TextBox
-$textboxGameConfigStore.Location = New-Object System.Drawing.Point(20, 170)
-$textboxGameConfigStore.Size = New-Object System.Drawing.Size(540, 20)
-$textboxGameConfigStore.ReadOnly = $true
-$textboxMouseDataQueueSize = New-Object System.Windows.Forms.TextBox
-$textboxMouseDataQueueSize.Location = New-Object System.Drawing.Point(20, 200)
-$textboxMouseDataQueueSize.Size = New-Object System.Drawing.Size(540, 20)
-$textboxMouseDataQueueSize.ReadOnly = $true
-$textboxNetworkOffload = New-Object System.Windows.Forms.TextBox
-$textboxNetworkOffload.Location = New-Object System.Drawing.Point(20, 230)
-$textboxNetworkOffload.Size = New-Object System.Drawing.Size(540, 20)
-$textboxNetworkOffload.ReadOnly = $true
-$textboxNetworkRSS = New-Object System.Windows.Forms.TextBox
-$textboxNetworkRSS.Location = New-Object System.Drawing.Point(20, 260)
-$textboxNetworkRSS.Size = New-Object System.Drawing.Size(540, 20)
-$textboxNetworkRSS.ReadOnly = $true
-
-$applyButton = New-Object System.Windows.Forms.Button
-$applyButton.Location = New-Object System.Drawing.Point(20, 300)
-$applyButton.Size = New-Object System.Drawing.Size(250, 40)
-$applyButton.Text = "Aplicar Optimizaciones"
-$applyButton.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-$applyButton.Add_Click({
-    Apply-Optimizations
-})
-
-$revertButton = New-Object System.Windows.Forms.Button
-$revertButton.Location = New-Object System.Drawing.Point(310, 300)
-$revertButton.Size = New-Object System.Drawing.Size(250, 40)
-$revertButton.Text = "Revertir Optimizaciones"
-$revertButton.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-$revertButton.Add_Click({
-    Revert-Optimizations
-})
-
-$exitButton = New-Object System.Windows.Forms.Button
-$exitButton.Location = New-Object System.Drawing.Point(150, 360)
-$exitButton.Size = New-Object System.Drawing.Size(300, 30)
-$exitButton.Text = "Salir"
-$exitButton.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-$exitButton.Add_Click({
-    $form.Close()
-})
-
-$button1 = New-Object System.Windows.Forms.Button
-$button1.Location = New-Object System.Drawing.Point(20, 400)
-$button1.Size = New-Object System.Drawing.Size(540, 40)
-$button1.Text = "Añadir optimización al menú contextual"
-$button1.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-
-$button1.Add_Click({
-    function Download-Files {
-        $menuContextualPath = [System.IO.Path]::Combine($env:ProgramFiles, "TheKrowBlooder", "menucontextual")
-        $tempPath = [System.IO.Path]::Combine($env:TEMP, "menucontextual.reg")
-        
-        if (-not (Test-Path $menuContextualPath)) {
-            New-Item -ItemType Directory -Force -Path $menuContextualPath
-        }
-
-        $files = @(
-            "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/TKB.ico?raw=true",
-            "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/mantenimiento.bat?raw=true",
-            "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/windowsupdateactive.bat?raw=true",
-            "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/windowsupdateinactive.bat?raw=true"
-        )
-
-        foreach ($file in $files) {
-            $filename = [System.IO.Path]::GetFileName($file.Split('?')[0])  # Limpiar la URL para obtener el nombre del archivo
-            $destination = [System.IO.Path]::Combine($menuContextualPath, $filename)
-            Invoke-WebRequest -Uri $file -OutFile $destination
-        }
-
-        $regFileUrl = "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/menucontextual.reg?raw=true"
-        Invoke-WebRequest -Uri $regFileUrl -OutFile $tempPath
-        Start-Process -FilePath $tempPath -ArgumentList "/s" -Wait
-
-        [System.Windows.Forms.MessageBox]::Show("Los archivos se han descargado y el archivo de registro ha sido ejecutado correctamente.", "Operación completada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    if (-not (Test-Path $menuContextualPath)) {
+        New-Item -ItemType Directory -Force -Path $menuContextualPath
     }
 
+    $files = @(
+        "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/TKB.ico?raw=true",
+        "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/mantenimiento.bat?raw=true",
+        "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/windowsupdateactive.bat?raw=true",
+        "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/windowsupdateinactive.bat?raw=true"
+        "https://github.com/thekrowblooder/Windows/blob/main/quitarmenu.bat?raw=true"
+
+    )
+
+    foreach ($file in $files) {
+        $filename = [System.IO.Path]::GetFileName($file.Split('?')[0])
+        $destination = [System.IO.Path]::Combine($menuContextualPath, $filename)
+        Invoke-WebRequest -Uri $file -OutFile $destination
+    }
+
+    $regFileUrl = "https://github.com/thekrowblooder/Windows/blob/main/menucontextual/menucontextual.reg?raw=true"
+    Invoke-WebRequest -Uri $regFileUrl -OutFile $tempPath
+    Start-Process -FilePath $tempPath -ArgumentList "/s" -Wait
+
+    [System.Windows.Forms.MessageBox]::Show("Los archivos se han descargado y el archivo de registro ha sido ejecutado correctamente.", "Operacion completada", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+}
+
+function Remove-ContextMenu {
+    $batchFilePath = "C:\Program Files\TheKrowBlooder\menucontextual\quitarmenu.bat"
+    
+    if (Test-Path $batchFilePath) {
+        try {
+            # Ejecutar el archivo .bat
+            Start-Process -FilePath $batchFilePath -Wait
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("No se pudo ejecutar. Error: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("No se pudo ejecutar.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+}
+
+
+
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Configuraciones Avanzadas"
+$form.Size = New-Object System.Drawing.Size(600, 540)  # Aumentar altura para acomodar botones
+$form.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)  # Fondo claro
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog  # No redimensionable
+$form.MaximizeBox = $false  # Deshabilitar maximizar
+$form.MinimizeBox = $false  # Deshabilitar minimizar
+
+$font = New-Object System.Drawing.Font("Segoe UI", 10)
+
+function CreateTextBox ($location, $width, $height) {
+    $textbox = New-Object System.Windows.Forms.TextBox
+    $textbox.Location = $location
+    $textbox.Size = New-Object System.Drawing.Size($width, $height)
+    $textbox.Font = $font
+    $textbox.ReadOnly = $true
+    $textbox.BackColor = [System.Drawing.Color]::White
+    $textbox.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+    return $textbox
+}
+
+$textboxPowerSettings = CreateTextBox (New-Object System.Drawing.Point(20, 20)) 540 30
+$textboxTcpIpParameters = CreateTextBox (New-Object System.Drawing.Point(20, 60)) 540 30
+$textboxMemoryManagement = CreateTextBox (New-Object System.Drawing.Point(20, 100)) 540 30
+$textboxPriorityControl = CreateTextBox (New-Object System.Drawing.Point(20, 140)) 540 30
+$textboxMouseSettings = CreateTextBox (New-Object System.Drawing.Point(20, 180)) 540 30
+$textboxGameConfigStore = CreateTextBox (New-Object System.Drawing.Point(20, 220)) 540 30
+$textboxMouseDataQueueSize = CreateTextBox (New-Object System.Drawing.Point(20, 260)) 540 30
+$textboxNetworkOffload = CreateTextBox (New-Object System.Drawing.Point(20, 300)) 540 30
+$textboxNetworkRSS = CreateTextBox (New-Object System.Drawing.Point(20, 340)) 540 30
+
+function CreateButton ($text, $location, $width, $height) {
+    $button = New-Object System.Windows.Forms.Button
+    $button.Location = $location
+    $button.Size = New-Object System.Drawing.Size($width, $height)
+    $button.Text = $text
+    $button.Font = $font
+    $button.BackColor = [System.Drawing.Color]::FromArgb(100, 149, 237)  # Azul claro
+    $button.ForeColor = [System.Drawing.Color]::White
+    $button.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    return $button
+}
+
+$buttonWidth = 250
+$buttonHeight = 40
+$margin = 20  
+
+$applyButton = CreateButton "Aplicar optimizaciones" (New-Object System.Drawing.Point(20, 380)) $buttonWidth $buttonHeight
+$revertButton = CreateButton "Revertir a valores predeterminados" (New-Object System.Drawing.Point(20, 420)) $buttonWidth $buttonHeight
+$downloadButton = CreateButton "Anadir opciones de menu contextual" (New-Object System.Drawing.Point(310, 380)) $buttonWidth $buttonHeight
+$removeButton = CreateButton "Remover del menu contextual" (New-Object System.Drawing.Point(310, 420)) $buttonWidth $buttonHeight
+$applyButton.Location = New-Object System.Drawing.Point(20, 380)
+$revertButton.Location = New-Object System.Drawing.Point(20, 420)
+$downloadButton.Location = New-Object System.Drawing.Point(310, 380)
+$removeButton.Location = New-Object System.Drawing.Point(310, 420)
+$applyButton.Add_Click({ Apply-Optimizations })
+$revertButton.Add_Click({ Revert-Optimizations })
+$downloadButton.Add_Click({
     Download-Files
 })
-
-$form.Controls.AddRange(@($button1))
-
-
-$form.Controls.AddRange(@($button1))
-
-
+$removeButton.Add_Click({
+    Remove-ContextMenu
+})
 
 $form.Controls.AddRange(@(
     $textboxPowerSettings, $textboxTcpIpParameters, $textboxMemoryManagement,
     $textboxPriorityControl, $textboxMouseSettings, $textboxGameConfigStore,
     $textboxMouseDataQueueSize, $textboxNetworkOffload, $textboxNetworkRSS,
-    $applyButton, $revertButton, $exitButton, $button1, $button2, $button3
+    $applyButton, $revertButton, $downloadButton, $removeButton
 ))
 
 UpdateStatus
